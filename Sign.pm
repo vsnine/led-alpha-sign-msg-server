@@ -15,10 +15,11 @@ use constant EOT => "\x04";
 use constant ALL_SIGNS => '?00';
 
 sub new {
-    my ($class, $fh) = @_;
+    my ($class, $fh, $mode) = @_;
 
     my $self = bless {}, $class;
     $self->{fh} = $fh;
+    $self->{mode} = $mode;
     return $self;
 }
 
@@ -34,7 +35,13 @@ sub _send_packet {
 
     my $packet = join('', SYNC, SOH, ALL_SIGNS, $payload, sprintf("%04X", $checksum), EOT);
 
-    syswrite($sign->{fh}, $packet) or warn "Failed to write to sign: $!";
+    if ( $sign->{mode} eq 'serial' ) {
+        syswrite($sign->{fh}, $packet) or warn "Failed to write to sign: $!";
+    } elsif ( $sign->{mode} eq 'ip' ) {
+        $sign->{fh}->send($packet) or warn "Failed to write to sign: $!";
+    } else {
+        die "Select a mode of either 'serial' or 'ip'!";
+    }
 
 }
 
